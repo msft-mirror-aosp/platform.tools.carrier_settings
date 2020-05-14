@@ -108,7 +108,7 @@ public final class CarrierConfigConverterV2 {
 
   // Resource file path to the AOSP carrier list file
   private static final String RESOURCE_CARRIER_LIST =
-      "/assets/carrier_list.textpb";
+      "/assets/latest_carrier_id/carrier_list.textpb";
 
   // Constants used in parsing XMLs.
   private static final String XML_SUFFIX = ".xml";
