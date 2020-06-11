@@ -100,7 +100,7 @@ public final class CarrierConfigConverterV2 {
   private String outputDir = "/tmp/carrierconfig/out";
 
   @Parameter(names = "--version", description = "The version number for all output textpb.")
-  private int version = 1;
+  private long version = 1L;
 
   // For configs in vendor.xml w/o mcc/mnc, they are the default config values for all carriers.
   // In CarrierSettings, a special mcc/mnc "000000" is used to look up default config.
@@ -127,7 +127,7 @@ public final class CarrierConfigConverterV2 {
 
   /** Entry point when invoked from other Java code, eg. the server side conversion tool. */
   public static void convert(
-      String vendorXmlFile, String assetsDirName, String outputDir, int version)
+      String vendorXmlFile, String assetsDirName, String outputDir, long version)
       throws IOException {
     CarrierConfigConverterV2 converter = new CarrierConfigConverterV2();
     converter.vendorXmlFiles = ImmutableList.of(vendorXmlFile);
