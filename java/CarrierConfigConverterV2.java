@@ -636,6 +636,9 @@ public final class CarrierConfigConverterV2 {
       Element eElement = (Element) nNode;
       String key = eElement.getAttribute("name");
       String value = String.valueOf(eElement.getTextContent());
+      if (value.isEmpty()) {
+        value = eElement.getAttribute("value");
+      }
       configMap.put(key, CarrierConfig.Config.newBuilder().setTextValue(value).build());
     }
     // text array
