@@ -592,7 +592,8 @@ public final class CarrierConfigConverterV2 {
     nList = element.getElementsByTagName("boolean");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -604,7 +605,8 @@ public final class CarrierConfigConverterV2 {
     nList = element.getElementsByTagName("int");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -616,7 +618,8 @@ public final class CarrierConfigConverterV2 {
     nList = element.getElementsByTagName("long");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -624,11 +627,25 @@ public final class CarrierConfigConverterV2 {
       long value = Long.parseLong(eElement.getAttribute("value"));
       configMap.put(key, CarrierConfig.Config.newBuilder().setLongValue(value).build());
     }
+    // double value
+    nList = element.getElementsByTagName("double");
+    for (int i = 0; i < nList.getLength(); i++) {
+      Node nNode = nList.item(i);
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
+        continue;
+      }
+      Element eElement = (Element) nNode;
+      String key = eElement.getAttribute("name");
+      double value = Double.parseDouble(eElement.getAttribute("value"));
+      configMap.put(key, CarrierConfig.Config.newBuilder().setDoubleValue(value).build());
+    }
     // text value
     nList = element.getElementsByTagName("string");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -643,7 +660,8 @@ public final class CarrierConfigConverterV2 {
     nList = element.getElementsByTagName("string-array");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -662,11 +680,12 @@ public final class CarrierConfigConverterV2 {
       }
       configMap.put(key, cccb.setTextArray(cctb.build()).build());
     }
-    // bool array
+    // int array
     nList = element.getElementsByTagName("int-array");
     for (int i = 0; i < nList.getLength(); i++) {
       Node nNode = nList.item(i);
-      if (nNode.getNodeType() != Node.ELEMENT_NODE) {
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
         continue;
       }
       Element eElement = (Element) nNode;
@@ -684,6 +703,20 @@ public final class CarrierConfigConverterV2 {
         ccib.addItem(value);
       }
       configMap.put(key, cccb.setIntArray(ccib.build()).build());
+    }
+    // pbundle_as_map
+    nList = element.getElementsByTagName("pbundle_as_map");
+    for (int i = 0; i < nList.getLength(); i++) {
+      Node nNode = nList.item(i);
+      if (nNode.getNodeType() != Node.ELEMENT_NODE ||
+          !nNode.getParentNode().isSameNode(element)) {
+        continue;
+      }
+      Element eElement = (Element) nNode;
+      String key = eElement.getAttribute("name");
+      HashMap<String, CarrierConfig.Config> value = parseCarrierConfigToMap(eElement);
+      configMap.put(key, CarrierConfig.Config.newBuilder()
+          .setBundle(toCarrierConfigBuilder(value)).build());
     }
     return configMap;
   }
