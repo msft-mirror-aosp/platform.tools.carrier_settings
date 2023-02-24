@@ -102,6 +102,9 @@ public final class CarrierConfigConverterV2 {
   @Parameter(names = "--version", description = "The version number for all output textpb.")
   private long version = 1L;
 
+  @Parameter(names = "--consider_parent_canonical_id", arity = 1, description = "To consider parent_canonical_id")
+  private static boolean considerParentCanonicalId = false;
+
   private static final String MCCMNC_FOR_DEFAULT_SETTINGS = "000000";
 
   // Resource file path to the AOSP carrier list file
@@ -125,13 +128,14 @@ public final class CarrierConfigConverterV2 {
 
   /** Entry point when invoked from other Java code, eg. the server side conversion tool. */
   public static void convert(
-      String vendorXmlFile, String assetsDirName, String outputDir, long version)
+      String vendorXmlFile, String assetsDirName, String outputDir, long version, boolean considerParentCanonicalId)
       throws IOException {
     CarrierConfigConverterV2 converter = new CarrierConfigConverterV2();
     converter.vendorXmlFiles = ImmutableList.of(vendorXmlFile);
     converter.assetsDirName = assetsDirName;
     converter.outputDir = outputDir;
     converter.version = version;
+    converter.considerParentCanonicalId = considerParentCanonicalId;
     converter.convert();
   }
 
@@ -147,6 +151,7 @@ public final class CarrierConfigConverterV2 {
     DocumentBuilder xmlDocBuilder = getDocumentBuilder();
     Multimap<Integer, CarrierId> aospCarrierList = loadAospCarrierList();
     Multimap<CarrierId, Integer> reverseAospCarrierList = reverseAospCarrierList(aospCarrierList);
+    Multimap<CarrierId, Integer> reverseAospCarrierListPerParentCanonicalId = reverseAospCarrierListPerParentCanonicalId();
 
     /*
      * High-level flow:
@@ -267,7 +272,7 @@ public final class CarrierConfigConverterV2 {
     for (CarrierId carrier : carriers) {
       Map<String, CarrierConfig.Config> config = ImmutableMap.of();
 
-      CarrierIdentifier id = getCid(carrier, reverseAospCarrierList);
+      CarrierIdentifier id = getCid(carrier, reverseAospCarrierList, reverseAospCarrierListPerParentCanonicalId);
       if (id.getCarrierId() != -1) {
         HashMap<String, CarrierConfig.Config> configBySpecificCarrierId =
             parseCarrierConfigFromXml(
@@ -404,6 +409,31 @@ public final class CarrierConfigConverterV2 {
             flatteningToMultimap(
                 cid -> cid.getCanonicalId(),
                 cid -> carrierAttributeToCarrierId(cid.getCarrierAttributeList()).stream(),
+                MultimapBuilder.linkedHashKeys().arrayListValues()::build));
+  }
+
+  private static Multimap<CarrierId, Integer> reverseAospCarrierListPerParentCanonicalId() throws IOException {
+
+    com.android.providers.telephony.CarrierIdProto.CarrierList.Builder aospCarrierList =
+            com.android.providers.telephony.CarrierIdProto.CarrierList.newBuilder();
+    try (InputStream textpb =
+                 CarrierConfigConverterV2.class.getResourceAsStream(RESOURCE_CARRIER_LIST);
+         BufferedReader textpbReader = new BufferedReader(new InputStreamReader(textpb, UTF_8))) {
+      TextFormat.getParser().merge(textpbReader, aospCarrierList);
+    }
+    Multimap<Integer, CarrierId> res = aospCarrierList.getCarrierIdList().stream()
+            .filter(cid -> cid.getParentCanonicalId() > 0)
+            .collect(
+                    flatteningToMultimap(
+                            cid -> cid.getParentCanonicalId(),
+                            cid -> carrierAttributeToCarrierId(cid.getCarrierAttributeList()).stream(),
+                            MultimapBuilder.linkedHashKeys().arrayListValues()::build));
+
+    return res.entries().stream()
+        .collect(
+            toMultimap(
+                entry -> entry.getValue(),
+                entry -> entry.getKey(),
                 MultimapBuilder.linkedHashKeys().arrayListValues()::build));
   }
 
@@ -871,32 +901,77 @@ public final class CarrierConfigConverterV2 {
   }
 
   private static CarrierIdentifier getCid(
-      CarrierId carrierId, Multimap<CarrierId, Integer> reverseAospCarrierList) {
+      CarrierId carrierId, Multimap<CarrierId, Integer> reverseAospCarrierList,
+        Multimap<CarrierId, Integer> reverseAospCarrierListPerParentCanonicalId) {
     // Mimic TelephonyManager#getCarrierIdFromMccMnc, which is implemented by
     // CarrierResolver#getCarrierIdFromMccMnc.
     CarrierId mccMnc = CarrierId.newBuilder().setMccMnc(carrierId.getMccMnc()).build();
     int mccMncCarrierId = reverseAospCarrierList.get(mccMnc).stream().findFirst().orElse(-1);
-
     List<Integer> cids = ImmutableList.copyOf(reverseAospCarrierList.get(carrierId));
+    int parentCanonicalId = getParentCanonicalId(carrierId, cids, reverseAospCarrierListPerParentCanonicalId);
     // No match: use -1
     if (cids.isEmpty()) {
-      return CarrierIdentifier.create(carrierId, -1, -1, mccMncCarrierId);
+      if (considerParentCanonicalId) {
+        return CarrierIdentifier.create(carrierId, parentCanonicalId, -1, mccMncCarrierId);
+      } else {
+	return CarrierIdentifier.create(carrierId, -1, -1, mccMncCarrierId);
+      }
     }
     // One match: use as both carrierId and specificCarrierId
     if (cids.size() == 1) {
-      return CarrierIdentifier.create(carrierId, cids.get(0), cids.get(0), mccMncCarrierId);
+      if (considerParentCanonicalId) {
+        return CarrierIdentifier.create(carrierId, parentCanonicalId, cids.get(0), mccMncCarrierId);
+      } else {
+        return CarrierIdentifier.create(carrierId, cids.get(0), cids.get(0), mccMncCarrierId);
+      }
     }
     // Two matches:  specificCarrierId is always bigger than carrierId
     if (cids.size() == 2) {
-      return CarrierIdentifier.create(
-          carrierId,
-          Math.min(cids.get(0), cids.get(1)),
-          Math.max(cids.get(0), cids.get(1)),
-          mccMncCarrierId);
+      if (considerParentCanonicalId) {
+        return CarrierIdentifier.create(
+            carrierId,
+            parentCanonicalId,
+            Math.max(cids.get(0), cids.get(1)),
+            mccMncCarrierId);
+      } else {
+        return CarrierIdentifier.create(
+            carrierId,
+            Math.min(cids.get(0), cids.get(1)),
+            Math.max(cids.get(0), cids.get(1)),
+            mccMncCarrierId);
+      }
     }
     // Cannot be more than 2 matches.
     throw new IllegalStateException("More than two cid's found for " + carrierId + ": " + cids);
   }
 
+  private static int getParentCanonicalId(
+      CarrierId carrierId,
+      List<Integer> cids,
+      Multimap<CarrierId, Integer> reverseAospCarrierListPerParentCanonicalId) {
+
+    List<Integer> parentCids = ImmutableList.copyOf(reverseAospCarrierListPerParentCanonicalId.get(carrierId));
+    if (cids.isEmpty()) {
+      if (parentCids.isEmpty()) {
+        return -1;
+      } else {
+        return parentCids.get(0);
+      }
+    } else if (cids.size() == 1) {
+      if (parentCids.isEmpty()) {
+        return cids.get(0);
+      } else {
+        return parentCids.get(0);
+      }
+    } else if (cids.size() == 2) {
+      if (parentCids.isEmpty()) {
+        return Math.min(cids.get(0), cids.get(1));
+      } else {
+        return parentCids.get(0);
+      }
+    } else {
+      return -1;
+    }
+  }
   private CarrierConfigConverterV2() {}
 }
