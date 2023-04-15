@@ -269,6 +269,7 @@ public final class CarrierConfigConverterV2 {
     }
 
     // 3. For each CarrierId, build its carrier configs, following AOSP DefaultCarrierConfigService.
+    loadUniqueRulesFromVendorXml(vendorXmls);
     for (CarrierId carrier : carriers) {
       Map<String, CarrierConfig.Config> config = ImmutableMap.of();
 
@@ -596,13 +597,19 @@ public final class CarrierConfigConverterV2 {
    * @return a map, key being the carrier config key, value being a {@link CarrierConfig.Config}
    *     with one of the value set.
    */
-  private static HashMap<String, CarrierConfig.Config> parseCarrierConfigFromVendorXml(
+  private HashMap<String, CarrierConfig.Config> parseCarrierConfigFromVendorXml(
       Document xmlDoc, CarrierIdentifier carrier) throws IOException {
     HashMap<String, CarrierConfig.Config> configMap = new HashMap<>();
     for (Element element : getElementsByTagName(xmlDoc, TAG_CARRIER_CONFIG)) {
       if (carrier != null && !checkFilters(element, carrier)) {
         continue;
       }
+
+      Element parent_config = findParentConfigByUniqueRuleId(element);
+      if (parent_config != null) {
+        configMap.putAll(parseCarrierConfigToMap(parent_config));
+      }
+
       configMap.putAll(parseCarrierConfigToMap(element));
     }
     return configMap;
@@ -786,6 +793,8 @@ public final class CarrierConfigConverterV2 {
           break;
         case "name":
           // name is used together with cid for readability. ignore for filter.
+        case "unique_rule_id":
+        case "following":
           break;
         default:
           System.err.println("Unsupported attribute " + attribute + "=" + value);
@@ -974,4 +983,54 @@ public final class CarrierConfigConverterV2 {
     }
   }
   private CarrierConfigConverterV2() {}
+
+  // The hash map to store all the configs with attribute "unique_rule_id".
+  // The config entry with attribute "following" can inherit from the config
+  // with matching "unique_rule_id".
+  // Both "unique_rule_id" and "following" attributes can only appear in vendor xml.
+  private HashMap<String, Element> mUniqueRules = new HashMap<>();
+
+  private void loadUniqueRulesFromVendorXml(List<Document> vendorXmls)
+      throws IOException {
+    for (Document vendorXml : vendorXmls) {
+      for (Element element : getElementsByTagName(vendorXml, TAG_CARRIER_CONFIG)) {
+        NamedNodeMap attributes = element.getAttributes();
+        boolean uniqueRuleIdSeen = false;
+        for (int i = 0; i < attributes.getLength(); i++) {
+          String attribute = attributes.item(i).getNodeName();
+          String value = attributes.item(i).getNodeValue();
+          switch (attribute) {
+            case "unique_rule_id":
+              if (mUniqueRules.containsKey(value)) {
+                throw new IOException("The carrier_config has duplicated unique_rule_id: " + attributes);
+              } else if (uniqueRuleIdSeen) {
+                throw new IOException("The carrier_config has more than 1 unique_rule_id: " + attributes);
+              }
+              mUniqueRules.put(value, element);
+              uniqueRuleIdSeen = true;
+              break;
+            default:
+              break;
+          }
+        }
+      }
+    }
+  }
+
+  private Element findParentConfigByUniqueRuleId(Element childElement) {
+    NamedNodeMap attributes = childElement.getAttributes();
+    for (int i = 0; i < attributes.getLength(); i++) {
+      String attribute = attributes.item(i).getNodeName();
+      String value = attributes.item(i).getNodeValue();
+      switch (attribute) {
+        case "following":
+          return mUniqueRules.get(value);
+          //break;
+        default:
+          break;
+      }
+    }
+    return null;
+  }
+
 }
