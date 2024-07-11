@@ -28,9 +28,9 @@ import collections
 from xml.dom import minidom
 from google.protobuf import text_format
 
-import carrier_list_pb2
-import carrier_settings_pb2
-import carrierId_pb2
+from proto import carrier_list_pb2
+from proto import carrier_settings_pb2
+from src import carrierId_pb2
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
