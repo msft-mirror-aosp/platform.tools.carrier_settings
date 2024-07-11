@@ -117,7 +117,8 @@ echo 'Done.'
 echo 'step 3. Copy generated files to output directory ...'
 
 mkdir -p $OUTPUT_DIR > /dev/null
-rm -rf "${OUTPUT_DIR:?}"/* > /dev/null
+# Ignore error if first time running
+rm -rf "${OUTPUT_DIR:?}"/* > /dev/null  || true
 cp -r "$INNER_TMP_DIR"/pb  $OUTPUT_DIR > /dev/null
 cp -r "$INNER_TMP_DIR"/textpb  $OUTPUT_DIR > /dev/null
 rm -rf "${TMP_DIR:?}" > /dev/null
