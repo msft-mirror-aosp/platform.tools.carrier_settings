@@ -31,10 +31,10 @@ from __future__ import print_function
 import argparse
 import copy
 import os
-import compare
+from python import compare
 from google.protobuf import text_format
-import carrier_list_pb2
-import carrier_settings_pb2
+from proto import carrier_list_pb2
+from proto import carrier_settings_pb2
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
