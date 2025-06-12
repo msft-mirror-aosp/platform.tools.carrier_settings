@@ -147,6 +147,12 @@ APN_TYPE_MAP = {
     'xcap': carrier_settings_pb2.ApnItem.XCAP,
     'ut': carrier_settings_pb2.ApnItem.UT,
     'rcs': carrier_settings_pb2.ApnItem.RCS,
+    'mcx': carrier_settings_pb2.ApnItem.MCX,
+    'vsim': carrier_settings_pb2.ApnItem.VISM,
+    'bip': carrier_settings_pb2.ApnItem.BIP,
+    'enterprise': carrier_settings_pb2.ApnItem.ENTERPRISE,
+    'oem_paid': carrier_settings_pb2.ApnItem.OEM_PAID,
+    'oem_private': carrier_settings_pb2.ApnItem.OEM_PRIVATE,
 }
 
 

@@ -80,6 +80,12 @@ message ApnItem {
     XCAP = 11;
     UT = 12;
     RCS = 13;
+    MCX = 14;
+    VISM = 15;
+    BIP = 16;
+    ENTERPRISE = 17;
+    OEM_PAID = 18;
+    OEM_PRIVATE = 19;
   }
   repeated ApnType type = 3;
 

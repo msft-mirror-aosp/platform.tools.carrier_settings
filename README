@@ -6,7 +6,7 @@ and APNs in device/sample/etc/apns-full-conf.xml.
 Usage:
 
 $ source build/envsetup.sh
-$ lunch foo_bar
+$ lunch <target>
 $ croot
 $ source <path>/main.sh
 
