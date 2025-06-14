@@ -48,7 +48,7 @@ touch "$DEVICE_FILE" > /dev/null
 
 # 2b. Copy input files to workspace
 cp $INPUT_CARRIERCONFIG_XML_FILE "$TMP_DIR"/vendor.xml > /dev/null
-cp $INPUT_CARRIERCONFIG_ASSETS_DIR/* "$ASSETS_DIR"/ > /dev/null
+cp -r $INPUT_CARRIERCONFIG_ASSETS_DIR/* "$ASSETS_DIR"/ > /dev/null
 cp $INPUT_APNS_XML_FILE "$TMP_DIR"/apns-full-conf.xml > /dev/null
 
 # 2c. Convert XMLs to TEXTPB
