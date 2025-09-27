@@ -113,7 +113,7 @@ public final class GenCarrierList {
     String outFileMainName = outFileName.replace(BINARY_PB_SUFFIX, "");
     try (BufferedWriter bw =
         Files.newBufferedWriter(Paths.get(outFileMainName + TEXT_PB_SUFFIX), UTF_8)) {
-      TextFormat.printUnicode(clist, bw);
+      TextFormat.printer().escapingNonAscii(false).print(clist, bw);
     }
 
     if (versionInFileName) {
