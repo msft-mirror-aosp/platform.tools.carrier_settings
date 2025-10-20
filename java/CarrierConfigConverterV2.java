@@ -349,7 +349,7 @@ public final class CarrierConfigConverterV2 {
           cs.setConfigs(sortConfig(tier1Configs.get(cname)).toBuilder().build());
         }
         cs.setVersion(version);
-        TextFormat.printUnicode(cs.build(), bw);
+        TextFormat.printer().escapingNonAscii(false).print(cs, bw);
       }
     }
 
@@ -359,9 +359,9 @@ public final class CarrierConfigConverterV2 {
     CarrierProtoUtils.sortCarrierMapEntries(otherCarriers);
     try (OutputStream os = new FileOutputStream(new File(otherCarriersFile));
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(os, UTF_8))) {
-      CarrierList cl =
-          CarrierList.newBuilder().addAllEntry(otherCarriers).setVersion(version).build();
-      TextFormat.printUnicode(cl, bw);
+      CarrierList.Builder cl =
+          CarrierList.newBuilder().addAllEntry(otherCarriers).setVersion(version);
+      TextFormat.printer().escapingNonAscii(false).print(cl, bw);
     }
 
     // Output other carriers settings
@@ -378,7 +378,7 @@ public final class CarrierConfigConverterV2 {
                     .setConfigs(sortConfig(cc).toBuilder().build())
                     .build());
           });
-      TextFormat.printUnicode(mcs.build(), bw);
+      TextFormat.printer().escapingNonAscii(false).print(mcs, bw);
     }
 
     // Print out the list of all output file names

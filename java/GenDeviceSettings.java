@@ -161,7 +161,7 @@ public class GenDeviceSettings {
 
       File deviceSettingTextFile = new File(deviceSettingDir, outFileMainName + TEXT_PB_SUFFIX);
       try (BufferedWriter bw = Files.newBufferedWriter(deviceSettingTextFile.toPath(), UTF_8)) {
-        TextFormat.printUnicode(generatedMessage, bw);
+        TextFormat.printer().escapingNonAscii(false).print(generatedMessage, bw);
       }
 
       if (!deviceInFileName.isEmpty()) {
